@@ -24,26 +24,40 @@ namespace DistSysAcwServer.Auth
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, RolesAuthorizationRequirement requirement)
         {
             #region Task6
-            // TODO:  Modify the server's behaviour so that, when the action requires a user to be in Admin role ONLY 
-            // (e.g. [Authorize(Roles = "Admin")]) and the user does not have the Admin role, you return a Forbidden status (403) 
-            // with the message: "Forbidden. Admin access only."
-            #endregion
-
-            if (context.User != null && context.User.Identity.IsAuthenticated)
+            if (context.User.Identity.IsAuthenticated)
             {
-                foreach (string role in requirement.AllowedRoles)
+                var hasRequiredRole = context.User.Claims.Any(c => c.Type == ClaimTypes.Role && requirement.AllowedRoles.Contains(c.Value));
+
+                if (hasRequiredRole)
                 {
-                    if (context.User.IsInRole(role))
-                    {
-                        context.Succeed(requirement);
-                        return Task.CompletedTask;
-                    }
+                    context.Succeed(requirement);
+                }
+                else if (requirement.AllowedRoles.Contains("Admin"))
+                {
+                    // If the user does not have the Admin role, and the Admin role is required, fail the requirement.
+                   
+                    context.Fail(new AuthorizationFailureReason(this, "Forbidden. Admin access only."));
+
+                    // Access the current HttpContext from the HttpContextAccessor
+                    var httpContext = HttpContextAccessor.HttpContext;
+                    // Set the response status code to Forbidden (403)
+                    httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    // Write the custom message to the response
+                     httpContext.Response.WriteAsync("Forbidden. Admin access only.");
+                }
+                else
+                {
+                    context.Fail();
                 }
             }
-            
-            context.Fail();
+            else
+            {
+                context.Fail();
+            }
+            #endregion
 
             return Task.CompletedTask;
         }
+
     }
 }

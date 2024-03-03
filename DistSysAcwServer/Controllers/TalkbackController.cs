@@ -16,11 +16,8 @@ namespace DistSysAcwServer.Controllers
         #region TASK1
         //    TODO: add api/talkback/hello response
         [HttpGet]
-        [Route("hello")]
-        public IActionResult GetHello()
-        {
-            return Ok("Hello world");
-        }
+      
+        public IActionResult Hello() => Ok("Hello world");
 
         #endregion
 
@@ -31,8 +28,8 @@ namespace DistSysAcwServer.Controllers
         //       send the integers back as the api/talkback/sort response
         //       conform to the error handling requirements in the spec
         [HttpGet]
-        [Route("sort")]
-        public IActionResult GetSortedIntegers([FromQuery] int[] integers)
+        
+        public IActionResult Sort([FromQuery] int[] integers)
         {
             if (integers == null || integers.Length == 0)
             {
