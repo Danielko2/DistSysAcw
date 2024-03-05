@@ -1,3 +1,4 @@
+using DistSysAcwServer.Crypto;
 using DistSysAcwServer.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -23,7 +24,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddTransient<IAuthorizationHandler, DistSysAcwServer.Auth.CustomAuthorizationHandler>();
 builder.Services.AddScoped<UserDataAccess>();
-
+builder.Services.AddSingleton<RsaCryptoService>();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>

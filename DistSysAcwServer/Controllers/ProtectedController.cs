@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using DistSysAcwServer.Crypto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,12 @@ namespace DistSysAcwServer.Controllers
     [ApiController]
     public class ProtectedController : ControllerBase
     {
+        private readonly RsaCryptoService _rsaProvider;
+
+        public ProtectedController(RsaCryptoService rsaProvider)
+        {
+            _rsaProvider = rsaProvider;
+        }
         // GET api/protected/hello
         [HttpGet("hello")]
         public IActionResult Hello()
@@ -54,5 +61,15 @@ namespace DistSysAcwServer.Controllers
                 return Ok(hash);
             }
         }
+
+        [HttpGet("getpublickey")]
+        public IActionResult GetPublicKey()
+        {
+            // This should return the public key in XML format
+            var publicKeyXml = _rsaProvider.GetPublicKey();
+            return Ok(publicKeyXml);
+        }
+
+
     }
 }

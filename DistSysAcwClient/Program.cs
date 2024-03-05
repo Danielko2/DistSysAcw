@@ -17,7 +17,7 @@ class Program
         HttpClient httpClient = new HttpClient
         {
             // Use the appropriate base address depending on your environment
-            //BaseAddress = new Uri("https://localhost:44394/")
+           // BaseAddress = new Uri("https://localhost:44394/")
              BaseAddress = new Uri("http://150.237.94.9/9689818/")
         };
 
@@ -165,6 +165,11 @@ class Program
                 break;
             case "SHA256":
                 await HandleSha256Command(input, apiClient);
+                break;
+            case "Get": 
+                string publicKey = await apiClient.GetPublicKeyAsync();
+               
+               
                 break;
             default:
                 Console.WriteLine("Protected command not recognized.");

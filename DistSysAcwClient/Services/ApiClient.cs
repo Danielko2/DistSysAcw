@@ -161,6 +161,52 @@ namespace DistSysAcwClient.Services
             _httpClient.DefaultRequestHeaders.Add("ApiKey", apiKey);
             return await _httpClient.GetAsync($"api/protected/sha256?message={Uri.EscapeDataString(message)}");
         }
+
+
+        public async Task<string> GetPublicKeyAsync()
+        {
+            string apiKey = Environment.GetEnvironmentVariable("API_KEY");
+
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                Console.WriteLine("You need to do a User Post or User Set first.");
+                return null;
+            }
+
+            // Clear any existing headers to avoid conflicts
+            _httpClient.DefaultRequestHeaders.Clear();
+
+            // Add the API key to the headers
+            _httpClient.DefaultRequestHeaders.Add("ApiKey", apiKey);
+
+            try
+            {
+                var response = await _httpClient.GetAsync("api/protected/getpublickey");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string publicKeyXml = await response.Content.ReadAsStringAsync();
+                    Environment.SetEnvironmentVariable("PUBLIC_KEY", publicKeyXml, EnvironmentVariableTarget.User);
+                    Console.WriteLine("Got Public Key");
+                    return publicKeyXml;
+                }
+                else
+                {
+                    Console.WriteLine("Couldn't Get the Public Key");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving public key: {ex.Message}");
+                return null;
+            }
+        }
+
+
+
+
     }
+
 
 }
