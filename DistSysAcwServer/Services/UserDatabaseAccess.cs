@@ -75,6 +75,54 @@ namespace DistSysAcwServer.Models
             return false;
         }
 
+        public async Task LogActionAsync(string apiKey, string action)
+        {
+            var user = await _context.Users.Include(u => u.Logs).SingleOrDefaultAsync(u => u.ApiKey == apiKey);
+            if (user != null)
+            {
+                var logEntry = new Log
+                {
+                    LogString = action,
+                    LogDateTime = DateTime.UtcNow 
+                };
+                user.Logs.Add(logEntry);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task ArchiveUserLogsAsync(string apiKey)
+        {
+            var logsToArchive = await _context.Logs
+        .Where(log => log.User.ApiKey == apiKey)
+        .ToListAsync();
+
+            var logArchives = logsToArchive.Select(log => new LogArchive
+            {
+                LogString = log.LogString,
+                LogDateTime = log.LogDateTime,
+                UserApiKey = apiKey
+            }).ToList();
+
+            _context.LogArchives.AddRange(logArchives);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task ArchiveActionAsync(string apiKey, string action)
+        {
+            // Create a log entry for archiving
+            var logArchiveEntry = new LogArchive
+            {
+                LogString = action,
+                LogDateTime = DateTime.UtcNow, 
+                UserApiKey = apiKey // This will be the ApiKey of the user who is being deleted
+            };
+
+            // Add the log archive entry to the LogArchives DbSet
+            _context.LogArchives.Add(logArchiveEntry);
+
+            // Save changes to the database
+            await _context.SaveChangesAsync();
+        }
 
 
     }

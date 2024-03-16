@@ -52,7 +52,9 @@ namespace DistSysAcwServer.Controllers
         }
 
         // DELETE api/user/removeuser?username={username}
+       
         [HttpDelete("removeuser")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<IActionResult> RemoveUser([FromQuery] string username)
         {
             // Check if the ApiKey header is present in the request
@@ -65,14 +67,19 @@ namespace DistSysAcwServer.Controllers
 
             // Check if the username and ApiKey from the header belong to the same user
             bool userExists = await _userDataAccess.CheckUserExistsAsync(providedApiKey, username);
-
+           
             if (!userExists)
             {
                 // Return false and OK status as per the task requirement
                 return Ok(false);
             }
+            // Log the user's deletion
+            await _userDataAccess.ArchiveUserLogsAsync(providedApiKey);
 
+            // Then, log the user's deletion itself
+            await _userDataAccess.ArchiveActionAsync(providedApiKey, $"User deleted: {username}");
             // Attempt to delete the user from the database
+            await Task.Delay(100);
             bool deleted = await _userDataAccess.DeleteUserAsync(providedApiKey);
 
             // Return true if the user was deleted, false otherwise
@@ -109,6 +116,10 @@ namespace DistSysAcwServer.Controllers
                 bool result = await _userDataAccess.ChangeUserRoleAsync(user.ApiKey, model.Role);
                 if (result)
                 {
+                    // Get the API key of the user attempting the role change.
+                    string userApiKey = User.Claims.FirstOrDefault(c => c.Type == "ApiKey")?.Value;
+                    // Log the action
+                    await _userDataAccess.LogActionAsync(userApiKey, "Admin changed the role of " + model.Username + " to " + model.Role);
                     return Ok("DONE");
                 }
                 else
@@ -119,10 +130,9 @@ namespace DistSysAcwServer.Controllers
             }
             catch (Exception ex)
             {
-                // Log the exception details for debugging purposes
-                // _logger.LogError(ex, "An error occurred while changing the user role.");
+                
 
-                // Return a generic error message
+               
                 return BadRequest("NOT DONE: An error occurred");
             }
         }

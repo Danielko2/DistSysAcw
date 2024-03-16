@@ -87,7 +87,7 @@ namespace DistSysAcwServer.Auth
 
         protected override async Task HandleChallengeAsync(AuthenticationProperties properties)
         {
-            byte[] messagebytes = Encoding.ASCII.GetBytes("Task 5 Incomplete");
+            byte[] messagebytes = Encoding.ASCII.GetBytes("Unauthorized. Check ApiKey in Header is correct.");
             Context.Response.StatusCode = 401;
             Context.Response.ContentType = "application/json";
             await Context.Response.Body.WriteAsync(messagebytes, 0, messagebytes.Length);

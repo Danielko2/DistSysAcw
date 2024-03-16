@@ -3,7 +3,7 @@ using System.Text;
 
 namespace DistSysAcwServer.Crypto
 {
-    public class RsaCryptoService
+    public class RsaCryptoService : IDisposable
     {
         private readonly RSACryptoServiceProvider _rsaProvider;
 
@@ -47,8 +47,21 @@ namespace DistSysAcwServer.Crypto
         {
             return _rsaProvider.ToXmlString(false); // false to get the public key only
         }
+        public byte[] SignData(string message)
+        {
+            byte[] dataBytes = Encoding.UTF8.GetBytes(message);
+            // Sign the data, using SHA1 as the hashing algorithm
+            return _rsaProvider.SignData(dataBytes, new SHA1CryptoServiceProvider());
+        }
 
-        // Make sure to dispose of the RSA provider when done
+        public bool VerifyData(string originalMessage, byte[] signature)
+        {
+            byte[] dataBytes = Encoding.UTF8.GetBytes(originalMessage);
+            // Verify the data, using SHA1 as the hashing algorithm
+            return _rsaProvider.VerifyData(dataBytes, new SHA1CryptoServiceProvider(), signature);
+        }
+
+  // Dispose of the RSA provider
         public void Dispose()
         {
             if (_rsaProvider != null)

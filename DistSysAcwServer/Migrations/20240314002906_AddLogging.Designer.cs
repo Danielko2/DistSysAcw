@@ -4,6 +4,7 @@ using DistSysAcwServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DistSysAcwServer.Migrations
 {
     [DbContext(typeof(UserContext))]
-    partial class UserContextModelSnapshot : ModelSnapshot
+    [Migration("20240314002906_AddLogging")]
+    partial class AddLogging
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -38,7 +40,6 @@ namespace DistSysAcwServer.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserApiKey")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("LogId");
@@ -46,30 +47,6 @@ namespace DistSysAcwServer.Migrations
                     b.HasIndex("UserApiKey");
 
                     b.ToTable("Logs");
-                });
-
-            modelBuilder.Entity("DistSysAcwServer.Models.LogArchive", b =>
-                {
-                    b.Property<int>("LogId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LogId"), 1L, 1);
-
-                    b.Property<DateTime>("LogDateTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LogString")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserApiKey")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("LogId");
-
-                    b.ToTable("LogArchives");
                 });
 
             modelBuilder.Entity("DistSysAcwServer.Models.User", b =>
@@ -92,13 +69,9 @@ namespace DistSysAcwServer.Migrations
 
             modelBuilder.Entity("DistSysAcwServer.Models.Log", b =>
                 {
-                    b.HasOne("DistSysAcwServer.Models.User", "User")
+                    b.HasOne("DistSysAcwServer.Models.User", null)
                         .WithMany("Logs")
-                        .HasForeignKey("UserApiKey")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
+                        .HasForeignKey("UserApiKey");
                 });
 
             modelBuilder.Entity("DistSysAcwServer.Models.User", b =>

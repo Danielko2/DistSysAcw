@@ -17,8 +17,8 @@ class Program
         HttpClient httpClient = new HttpClient
         {
             // Use the appropriate base address depending on your environment
-           // BaseAddress = new Uri("https://localhost:44394/")
-             BaseAddress = new Uri("http://150.237.94.9/9689818/")
+            BaseAddress = new Uri("https://localhost:44394/")
+             //BaseAddress = new Uri("http://150.237.94.9/9689818/")
         };
 
         ApiClient apiClient = new ApiClient(httpClient);
@@ -171,6 +171,9 @@ class Program
                
                
                 break;
+            case "Sign":
+                await HandleSignCommand(input, apiClient);
+                break;
             default:
                 Console.WriteLine("Protected command not recognized.");
                 break;
@@ -218,7 +221,7 @@ class Program
         else
         {
             string errorContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Failed to change user role. Status code: {response.StatusCode}, Content: {errorContent}");
+            Console.WriteLine(response);
         }
     }
     static async Task HandleProtectedHello(ApiClient apiClient)
@@ -238,7 +241,7 @@ class Program
         }
         else
         {
-            Console.WriteLine($"Failed to get protected hello. Status code: {response.StatusCode}");
+            Console.WriteLine(response);
         }
     }
 
@@ -296,6 +299,47 @@ class Program
         else
         {
             Console.WriteLine($"Failed to get SHA256 hash. Status code: {response.StatusCode}");
+        }
+    }
+
+
+    static async Task HandleSignCommand(string input, ApiClient apiClient)
+    {
+        string[] parts = input.Split(' ');
+        if (parts.Length < 3)
+        {
+            Console.WriteLine("Invalid input for Sign command.");
+            return;
+        }
+
+        string message = parts[2];
+        string apiKey = Environment.GetEnvironmentVariable("API_KEY");
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            Console.WriteLine("You need to do a User Post or User Set first.");
+            return;
+        }
+
+        HttpResponseMessage response = await apiClient.GetSignedMessageAsync(message, apiKey);
+        if (response.IsSuccessStatusCode)
+        {
+            string signedMessageHex = await response.Content.ReadAsStringAsync();
+            signedMessageHex = signedMessageHex.Replace("-", "");
+            byte[] signature = Convert.FromHexString(signedMessageHex);
+
+            string publicKeyXml = Environment.GetEnvironmentVariable("PUBLIC_KEY");
+            if (publicKeyXml == null)
+            {
+                Console.WriteLine("Client doesn't have the public key yet");
+                return;
+            }
+
+            bool isVerified = apiClient.VerifySignedMessage(message, signature, publicKeyXml);
+            Console.WriteLine(isVerified ? "Message was successfully signed" : "Message was not successfully signed");
+        }
+        else
+        {
+            Console.WriteLine($"Failed to sign message. Status code: {response.StatusCode}");
         }
     }
 }

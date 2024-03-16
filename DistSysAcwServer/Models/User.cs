@@ -27,10 +27,13 @@ namespace DistSysAcwServer.Models
         // Role property to store the role of the user.
         public string Role { get; set; }
         #endregion
+        
+        public virtual ICollection<Log> Logs { get; set; }
     }
 
     #region Task13?
     // TODO: You may find it useful to add code here for Logging
+   
     #endregion
 
 

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,6 +24,8 @@ namespace DistSysAcwClient.Services
         {
             // Send a GET request to the TalkBack endpoint.
             var response = await _httpClient.GetAsync("api/talkback/hello");
+           
+
 
             response.EnsureSuccessStatusCode(); // This will throw an exception
 
@@ -121,12 +124,12 @@ namespace DistSysAcwClient.Services
             // Check the response status code and return true if the delete was successful
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("User deleted successfully.");
+               
                 return true;
             }
             else
             {
-                Console.WriteLine("Failed to delete user.");
+               
                 return false;
             }
         }
@@ -186,7 +189,7 @@ namespace DistSysAcwClient.Services
                 if (response.IsSuccessStatusCode)
                 {
                     string publicKeyXml = await response.Content.ReadAsStringAsync();
-                    Environment.SetEnvironmentVariable("PUBLIC_KEY", publicKeyXml, EnvironmentVariableTarget.User);
+                    Environment.SetEnvironmentVariable("PUBLIC_KEY", publicKeyXml);
                     Console.WriteLine("Got Public Key");
                     return publicKeyXml;
                 }
@@ -200,6 +203,24 @@ namespace DistSysAcwClient.Services
             {
                 Console.WriteLine($"Error retrieving public key: {ex.Message}");
                 return null;
+            }
+        }
+
+
+        public async Task<HttpResponseMessage> GetSignedMessageAsync(string message, string apiKey)
+        {
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("ApiKey", apiKey);
+            return await _httpClient.GetAsync($"api/protected/sign?message={Uri.EscapeDataString(message)}");
+        }
+
+        public bool VerifySignedMessage(string originalMessage, byte[] signature, string publicKeyXml)
+        {
+            using (var rsaProvider = new RSACryptoServiceProvider())
+            {
+                rsaProvider.FromXmlString(publicKeyXml);
+                byte[] dataBytes = Encoding.UTF8.GetBytes(originalMessage);
+                return rsaProvider.VerifyData(dataBytes, new SHA1CryptoServiceProvider(), signature);
             }
         }
 

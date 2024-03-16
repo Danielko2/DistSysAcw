@@ -7,7 +7,8 @@ namespace DistSysAcwServer.Models
         public UserContext() : base() { }
 
         public DbSet<User> Users { get; set; }
-
+        public DbSet<Log> Logs { get; set; }
+        public DbSet<LogArchive> LogArchives { get; set; }
         //TODO: Task13
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
