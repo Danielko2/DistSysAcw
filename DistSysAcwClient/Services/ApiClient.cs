@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -224,6 +225,89 @@ namespace DistSysAcwClient.Services
             }
         }
 
+        public async Task<string> MashifyStringAsync(string inputString)
+        {
+            // Check if we have an API key and the server's public RSA key
+            string apiKey = Environment.GetEnvironmentVariable("API_KEY");
+            string publicKeyXml = Environment.GetEnvironmentVariable("PUBLIC_KEY");
+            if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(publicKeyXml))
+            {
+                Console.WriteLine("You need to do a User Post or User Set first, and get the public key.");
+                return "Client setup incomplete";
+            }
+
+            // Clear any existing headers to avoid conflicts
+            _httpClient.DefaultRequestHeaders.Clear();
+
+            // Add the API key to the headers
+            _httpClient.DefaultRequestHeaders.Add("ApiKey", apiKey);
+
+            try
+            {
+                // Encrypt the input string, AES key, and IV using the server's public RSA key
+                RSA rsa = RSA.Create();
+                rsa.FromXmlString(publicKeyXml); // Import the RSA key
+
+                byte[] inputBytes = Encoding.UTF8.GetBytes(inputString);
+                byte[] encryptedInputString = rsa.Encrypt(inputBytes, RSAEncryptionPadding.OaepSHA1);
+
+                // Generate an AES key and IV
+                using (Aes aes = Aes.Create())
+                {
+                    aes.GenerateKey();
+                    aes.GenerateIV();
+
+                    byte[] encryptedAesKey = rsa.Encrypt(aes.Key, RSAEncryptionPadding.OaepSHA1);
+                    byte[] encryptedAesIV = rsa.Encrypt(aes.IV, RSAEncryptionPadding.OaepSHA1);
+
+                    // Convert the encrypted data to hex strings with dashes
+                    string encryptedInputStringHex = BitConverter.ToString(encryptedInputString); // Hex string with dashes
+                    string encryptedAesKeyHex = BitConverter.ToString(encryptedAesKey); // Hex string with dashes
+                    string encryptedAesIVHex = BitConverter.ToString(encryptedAesIV);   // Hex string with dashes
+
+                    // Construct the query string with the encrypted parameters
+                    string queryString = $"encryptedString={encryptedInputStringHex}&encryptedSymKey={encryptedAesKeyHex}&encryptedIV={encryptedAesIVHex}";
+
+                    // Send the GET request to the server's mashify endpoint with the query string
+                    HttpResponseMessage response = await _httpClient.GetAsync($"api/protected/mashify?{queryString}");
+
+                    // Check the response and decrypt if successful
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string encryptedResponseHex = await response.Content.ReadAsStringAsync();
+                        byte[] encryptedResponseBytes = Convert.FromHexString(encryptedResponseHex.Replace("-", ""));
+
+                        // Decrypt the response using AES
+                        using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                        {
+                            using (var ms = new MemoryStream(encryptedResponseBytes))
+                            {
+                                using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                                {
+                                    using (var reader = new StreamReader(cs))
+                                    {
+                                        string decryptedString = await reader.ReadToEndAsync();
+                                        Console.WriteLine(decryptedString);
+                                        return decryptedString;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        string errorContent = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"Failed to mashify the string. Response: {errorContent}");
+                        return "Failed to mashify the string";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception occurred during mashify operation: {ex.Message}");
+                return "Exception occurred";
+            }
+        }
 
 
 

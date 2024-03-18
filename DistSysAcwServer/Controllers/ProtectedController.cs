@@ -128,8 +128,101 @@ namespace DistSysAcwServer.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Error signing message");
             }
         }
+        [HttpGet("mashify")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Mashify(
+       [FromQuery] string encryptedString,
+       [FromQuery] string encryptedSymKey,
+       [FromQuery] string encryptedIV)
+        {
+            try
+            {
+                string hexStringWithoutDashes = encryptedString.Replace("-", "");
+                string encryptedSymKeyWithoutDashes = encryptedSymKey.Replace("-", "");
+                string encryptedIVWithoutDashes = encryptedIV.Replace("-", "");
+
+                byte[] encryptedStringBytes = HexStringToByteArray(hexStringWithoutDashes);
+                byte[] encryptedSymKeyBytes = HexStringToByteArray(encryptedSymKeyWithoutDashes);
+                byte[] encryptedIVBytes = HexStringToByteArray(encryptedIVWithoutDashes);
+
+                byte[] decryptedSymKeyBytes = _rsaProvider.DecryptData(encryptedSymKeyBytes);
+                byte[] decryptedIVBytes = _rsaProvider.DecryptData(encryptedIVBytes);
+                byte[] decryptedStringBytes = _rsaProvider.DecryptData(encryptedStringBytes);
+                string decryptedString = Encoding.UTF8.GetString(decryptedStringBytes).Trim('\0');
+
+                string mashifiedString = MashifyString(decryptedString);
+                string encryptedMashifiedStringHex = EncryptWithAes(mashifiedString, decryptedSymKeyBytes, decryptedIVBytes);
+                // Return the encrypted, mashified string in hexadecimal format
+                return Ok(encryptedMashifiedStringHex);
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions, such as issues with decryption or encryption
+                return BadRequest($"Error occurred: {ex.Message}");
+            }
+        }
+        public static byte[] HexStringToByteArray(string hexString)
+        {
+            return Enumerable.Range(0, hexString.Length)
+                             .Where(x => x % 2 == 0)
+                             .Select(x => Convert.ToByte(hexString.Substring(x, 2), 16))
+                             .ToArray();
+        }
+        private string MashifyString(string input)
+        {
+            // Define vowels
+            var vowels = new HashSet<char> { 'a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U' };
+
+            // Use StringBuilder for efficient string manipulation
+            var sb = new StringBuilder(input.Length);
+
+            // Replace vowels with 'X'
+            foreach (char c in input)
+            {
+                if (vowels.Contains(c))
+                {
+                    sb.Append('X');
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+
+            // Reverse the string
+            char[] charArray = sb.ToString().ToCharArray();
+            Array.Reverse(charArray);
+
+            // Return the new string
+            return new string(charArray);
+        }
 
 
+        private string EncryptWithAes(string input, byte[] keyBytes, byte[] ivBytes)
+        {
+            // No need to convert from hex string anymore since we are using byte arrays directly.
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = keyBytes;
+                aesAlg.IV = ivBytes;
+
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                using (var msEncrypt = new MemoryStream())
+                {
+                    using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (var swEncrypt = new StreamWriter(csEncrypt))
+                        {
+                            swEncrypt.Write(input);
+                        }
+                    }
+                    byte[] encrypted = msEncrypt.ToArray();
+                    return BitConverter.ToString(encrypted).Replace("-", "");
+                }
+            }
+        }
 
     }
 }

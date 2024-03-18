@@ -34,14 +34,15 @@ namespace DistSysAcwServer.Crypto
         public byte[] EncryptData(string message)
         {
             byte[] byteMessage = Encoding.UTF8.GetBytes(message);
-            return _rsaProvider.Encrypt(byteMessage, true);
+            return _rsaProvider.Encrypt(byteMessage, RSAEncryptionPadding.OaepSHA1);
         }
 
-        public string DecryptData(byte[] encryptedData)
+
+        public byte[] DecryptData(byte[] encryptedData)
         {
-            byte[] decryptedBytes = _rsaProvider.Decrypt(encryptedData, true);
-            return Encoding.UTF8.GetString(decryptedBytes);
+            return _rsaProvider.Decrypt(encryptedData, RSAEncryptionPadding.OaepSHA1);
         }
+
 
         public string GetPublicKey()
         {

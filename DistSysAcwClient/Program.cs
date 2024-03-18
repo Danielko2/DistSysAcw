@@ -18,7 +18,7 @@ class Program
         {
             // Use the appropriate base address depending on your environment
             BaseAddress = new Uri("https://localhost:44394/")
-             //BaseAddress = new Uri("http://150.237.94.9/9689818/")
+            // BaseAddress = new Uri("http://150.237.94.9/9689818/")
         };
 
         ApiClient apiClient = new ApiClient(httpClient);
@@ -173,6 +173,18 @@ class Program
                 break;
             case "Sign":
                 await HandleSignCommand(input, apiClient);
+                break;
+            case "Mashify":
+                if (parts.Length >= 3)
+                {
+                    // Join the parts array from the third element to the end to get the full string to mashify
+                    string stringToMashify = string.Join(" ", parts.Skip(2));
+                    await apiClient.MashifyStringAsync(stringToMashify);
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input for Mashify command. Correct format: 'Protected Mashify <string>'");
+                }
                 break;
             default:
                 Console.WriteLine("Protected command not recognized.");
