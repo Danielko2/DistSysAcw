@@ -21,6 +21,7 @@ Asynchronous operations to improve user experience.
 
 When  client is opened it should show: “Hello. What would you like to do?” and wait for user input.
 Bellow Is the instruction on how it should work.
+
 ![image](https://github.com/Danielko2/DistSysAcw/assets/91594759/e7acff7f-b544-423c-9be2-9ec4a10980f7)
 ![image](https://github.com/Danielko2/DistSysAcw/assets/91594759/5e17e707-70a0-452f-a44c-f4ca4482becb)
 ![image](https://github.com/Danielko2/DistSysAcw/assets/91594759/655108ae-8e90-42bb-a596-59ac90a8210b)
